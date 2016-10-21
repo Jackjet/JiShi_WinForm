@@ -38,17 +38,31 @@ namespace JiShi_WinForm
             if (!working)
             {
                 working = true;
-                string json_decl = db.ListLeftPop("Redis_Declare");//获取redis队列中第一份的报关单
-                if (!string.IsNullOrEmpty(json_decl))
+                InsertDecl();
+                working = false;
+            }
+        }
+        private void InsertDeclList()
+        {
+            string json_decllist = db.ListLeftPop("Redis_DeclareList");
+            if (!string.IsNullOrEmpty(json_decllist))
+            {
+                JObject jo_decllist = (JObject)JsonConvert.DeserializeObject(json_decllist);
+                string sql = "insert into list_decllist() values()";
+            }
+        }
+        private void InsertDecl()
+        {
+            string json_decl = db.ListLeftPop("Redis_Declare"); 
+            if (!string.IsNullOrEmpty(json_decl))
+            {
+                JObject jo_decl = (JObject)JsonConvert.DeserializeObject(json_decl);
+                try
                 {
-                    JObject jo_decl = (JObject)JsonConvert.DeserializeObject(json_decl);
-                    //先删除已经存在的预制报关单号
-                    try
-                    {
-                        string sql = "delete from list_declaration where code='" + jo_decl.Value<string>("CODE") + "'";
-                        DBMgr.ExecuteNonQuery(sql);
-                        //添加到报关单表
-                        sql = @"insert into list_declaration(id
+                    string sql = "delete from list_declaration where code='" + jo_decl.Value<string>("CODE") + "'"; //先删除已经存在的预制报关单号
+                    DBMgr.ExecuteNonQuery(sql);
+                    //添加到报关单表
+                    sql = @"insert into list_declaration(id
                                 , code, codetype, ordercode, declarationcode, unitycode, currentcode, customareacode, declway, decltype, portcode, contractno                                
                                 , recordcode, channel, conshippercode , conshippername, busiunitcode, busiunitname, repunitcode, repunitname, transmodel, transname                                
                                 , voyageno, blno, exemptioncode, tradecode, tradecountrycode, secountrycode, seportcode , seplacecode, goodsnum, packagecode                                
@@ -74,47 +88,43 @@ namespace JiShi_WinForm
                                 ,'{31}','{32}','{33}','{34}','{35}','{36}','{37}','{38}','{39}','{40}'
                                 ,'{41}','{42}','{43}','{44}','{45}','{46}','{47}','{48}','{49}','{50}'
 
-                                ,'{51}','{52}','{53}','{54}','{55}','{56}','{57}','{58}','{59}','{60}'
-                                ,'{61}','{62}','{63}','{64}','{65}','{66}','{67}','{68}','{69}','{70}'
-                                ,'{71}','{72}','{73}','{74}','{75}','{76}','{77}','{78}','{79}','{80}'
-                                ,'{81}','{82}','{83}','{84}','{85}','{86}','{87}','{88}','{89}','{90}'
+                                ,'{51}','{52}','{53}','{54}','{55}',{56},{57},'{58}','{59}','{60}'
+                                ,'{61}',{62},{63},'{64}','{65}','{66}','{67}',{68},{69},'{70}'
+                                ,'{71}','{72}','{73}',{74},'{75}','{76}',{77},'{78}','{79}',{80}
+                                ,'{81}','{82}',{83},'{84}','{85}',{86},'{87}','{88}','{89}','{90}'
                                 ,'{91}','{92}','{93}','{94}','{95}','{96}','{97}','{98}','{99}','{100}'
 
-                                ,'{101}','{102}','{103}','{104}','{105}','{106}','{107}','{108}','{109}','{110}'
-                                ,'{111}','{112}','{113}','{114}','{115}','{116}','{117}','{118}','{119}','{120}'
-                                ,'{121}','{122}','{123}','{124}','{125}','{126}','{127}','{128}','{129}','{130}'
+                                ,'{101}','{102}','{103}','{104}','{105}','{106}','{107}',{108},'{109}','{110}'
+                                ,'{111}','{112}',{113},'{114}','{115}','{116}','{117}',{118},'{119}','{120}'
+                                ,'{121}','{122}','{123}','{124}',{125},'{126}','{127}','{128}',{129},'{130}'
                                 ,'{131}','{132}','{133}','{134}','{135}','{136}','{137}','{138}','{139}','{140}'
-                                ,'{141}','{142}','{143}','{144}'
+                                ,'{141}',{142},'{143}','{144}'
                                 )";
-                        sql = string.Format(sql
-                                            , jo_decl.Value<string>("NAME"), jo_decl.Value<string>("code"), jo_decl.Value<string>("codetype"), jo_decl.Value<string>("ordercode"), jo_decl.Value<string>("declarationcode")
-                                            , jo_decl.Value<string>("currentcode"), jo_decl.Value<string>("customareacode"), jo_decl.Value<string>("declway"), jo_decl.Value<string>("decltype"), jo_decl.Value<string>("portcode"), jo_decl.Value<string>("contractno"), jo_decl.Value<string>("unitycode")
-                                            , jo_decl.Value<string>("recordcode"), jo_decl.Value<string>("channel"), jo_decl.Value<string>("conshippercode"), jo_decl.Value<string>("conshippername"), jo_decl.Value<string>("busiunitcode"), jo_decl.Value<string>("busiunitname"), jo_decl.Value<string>("repunitcode"), jo_decl.Value<string>("repunitname"), jo_decl.Value<string>("transmodel"), jo_decl.Value<string>("transname ")
-                                            , jo_decl.Value<string>("voyageno"), jo_decl.Value<string>("blno"), jo_decl.Value<string>("exemptioncode"), jo_decl.Value<string>("tradecode"), jo_decl.Value<string>("tradecountrycode"), jo_decl.Value<string>("secountrycode"), jo_decl.Value<string>("seportcode"), jo_decl.Value<string>("seplacecode"), jo_decl.Value<string>("goodsnum"), jo_decl.Value<string>("packagecode")
-                                            , jo_decl.Value<string>("licenseno"), jo_decl.Value<string>("goodsgw"), jo_decl.Value<string>("goodsnw"), jo_decl.Value<string>("tradetermscode"), jo_decl.Value<string>("fgcode"), jo_decl.Value<string>("freight"), jo_decl.Value<string>("fgunitcode"), jo_decl.Value<string>("ipcode"), jo_decl.Value<string>("insurancepremium"), jo_decl.Value<string>("ipunitcode")
-                                            , jo_decl.Value<string>("aecode"), jo_decl.Value<string>("additionalexpenses"), jo_decl.Value<string>("aeunitcode"), jo_decl.Value<string>("specialrelation"), jo_decl.Value<string>("priceimpact"), jo_decl.Value<string>("paypoyalties"), jo_decl.Value<string>("taxrate"), jo_decl.Value<string>("taxunitcode"), jo_decl.Value<string>("taxunitname"), jo_decl.Value<string>("listinfo")
+                    sql = string.Format(sql
+                     , jo_decl.Value<string>("CODE"), jo_decl.Value<string>("CODETYPE"), jo_decl.Value<string>("ORDERCODE"), jo_decl.Value<string>("DECLARATIONCODE"), jo_decl.Value<string>("UNITYCODE"), jo_decl.Value<string>("CURRENTCODE"), jo_decl.Value<string>("CUSTOMAREACODE"), jo_decl.Value<string>("DECLWAY"), jo_decl.Value<string>("DECLTYPE"), jo_decl.Value<string>("PORTCODE"), jo_decl.Value<string>("CONTRACTNO")
+                                 , jo_decl.Value<string>("RECORDCODE"), jo_decl.Value<string>("CHANNEL"), jo_decl.Value<string>("CONSHIPPERCODE"), jo_decl.Value<string>("CONSHIPPERNAME"), jo_decl.Value<string>("BUSIUNITCODE"), jo_decl.Value<string>("BUSIUNITNAME"), jo_decl.Value<string>("REPUNITCODE"), jo_decl.Value<string>("REPUNITNAME"), jo_decl.Value<string>("TRANSMODEL"), jo_decl.Value<string>("TRANSNAME ")
+                                 , jo_decl.Value<string>("VOYAGENO"), jo_decl.Value<string>("BLNO"), jo_decl.Value<string>("EXEMPTIONCODE"), jo_decl.Value<string>("TRADECODE"), jo_decl.Value<string>("TRADECOUNTRYCODE"), jo_decl.Value<string>("SECOUNTRYCODE"), jo_decl.Value<string>("SEPORTCODE"), jo_decl.Value<string>("SEPLACECODE"), jo_decl.Value<string>("GOODSNUM"), jo_decl.Value<string>("PACKAGECODE")
+                                 , jo_decl.Value<string>("LICENSENO"), jo_decl.Value<string>("GOODSGW"), jo_decl.Value<string>("GOODSNW"), jo_decl.Value<string>("TRADETERMSCODE"), jo_decl.Value<string>("FGCODE"), jo_decl.Value<string>("FREIGHT"), jo_decl.Value<string>("FGUNITCODE"), jo_decl.Value<string>("IPCODE"), jo_decl.Value<string>("INSURANCEPREMIUM"), jo_decl.Value<string>("IPUNITCODE")
+                                 , jo_decl.Value<string>("AECODE"), jo_decl.Value<string>("ADDITIONALEXPENSES"), jo_decl.Value<string>("AEUNITCODE"), jo_decl.Value<string>("SPECIALRELATION"), jo_decl.Value<string>("PRICEIMPACT"), jo_decl.Value<string>("PAYPOYALTIES"), jo_decl.Value<string>("TAXRATE"), jo_decl.Value<string>("TAXUNITCODE"), jo_decl.Value<string>("TAXUNITNAME"), jo_decl.Value<string>("LISTINFO")
 
-                                            , jo_decl.Value<string>("remark"), jo_decl.Value<string>("isinvalid"), jo_decl.Value<string>("ispause"), jo_decl.Value<string>("moedit"), jo_decl.Value<string>("coedit"), jo_decl.Value<string>("mostarttime"), jo_decl.Value<string>("moendtime"), jo_decl.Value<string>("mostartid"), jo_decl.Value<string>("mostartname"), jo_decl.Value<string>("moendid")
-                                            , jo_decl.Value<string>("moendname"), jo_decl.Value<string>("costarttime"), jo_decl.Value<string>("coendtime"), jo_decl.Value<string>("costartid"), jo_decl.Value<string>("costartname"), jo_decl.Value<string>("coendid"), jo_decl.Value<string>("coendname"), jo_decl.Value<string>("prestarttime"), jo_decl.Value<string>("preendtime"), jo_decl.Value<string>("prestartid")
-                                            , jo_decl.Value<string>("prestartname"), jo_decl.Value<string>("preendid"), jo_decl.Value<string>("preendname"), jo_decl.Value<string>("ckfinishtime"), jo_decl.Value<string>("ckid"), jo_decl.Value<string>("ckname"), jo_decl.Value<string>("repstarttime"), jo_decl.Value<string>("repid"), jo_decl.Value<string>("repname"), jo_decl.Value<string>("relatedtime")
-                                            , jo_decl.Value<string>("relateduserid"), jo_decl.Value<string>("relatedusername"), jo_decl.Value<string>("rependtime"), jo_decl.Value<string>("rependid"), jo_decl.Value<string>("rependname"), jo_decl.Value<string>("repovertime"), jo_decl.Value<string>("repoverid"), jo_decl.Value<string>("repovername"), jo_decl.Value<string>("conshippernum"), jo_decl.Value<string>("busiunitnum")
-                                            , jo_decl.Value<string>("repunitnum"), jo_decl.Value<string>("isneedclearance"), jo_decl.Value<string>("ishaveclearance"), jo_decl.Value<string>("isforcelaw"), jo_decl.Value<string>("issplit"), jo_decl.Value<string>("warehouseno"), jo_decl.Value<string>("yardcode"), jo_decl.Value<string>("status"), jo_decl.Value<string>("sheetnum"), jo_decl.Value<string>("presheetnum")
+                                 , jo_decl.Value<string>("REMARK"), jo_decl.Value<string>("ISINVALID"), jo_decl.Value<string>("ISPAUSE"), jo_decl.Value<string>("MOEDIT"), jo_decl.Value<string>("COEDIT"), "TO_DATE('" + jo_decl.Value<string>("MOSTARTTIME") + "','yyyy-MM-dd HH24:mi:ss')", "TO_DATE('" + jo_decl.Value<string>("MOENDTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("MOSTARTID"), jo_decl.Value<string>("MOSTARTNAME"), jo_decl.Value<string>("MOENDID")
+                                 , jo_decl.Value<string>("MOENDNAME"), "TO_DATE('" + jo_decl.Value<string>("COSTARTTIME") + "','yyyy-MM-dd HH24:mi:ss')", "TO_DATE('" + jo_decl.Value<string>("COENDTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("COSTARTID"), jo_decl.Value<string>("COSTARTNAME"), jo_decl.Value<string>("COENDID"), jo_decl.Value<string>("COENDNAME"), "TO_DATE('" + jo_decl.Value<string>("PRESTARTTIME") + "','yyyy-MM-dd HH24:mi:ss')", "TO_DATE('" + jo_decl.Value<string>("PREENDTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("PRESTARTID")
+                                 , jo_decl.Value<string>("PRESTARTNAME"), jo_decl.Value<string>("PREENDID"), jo_decl.Value<string>("PREENDNAME"), "TO_DATE('" + jo_decl.Value<string>("CKFINISHTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("CKID"), jo_decl.Value<string>("CKNAME"), "TO_DATE('" + jo_decl.Value<string>("REPSTARTTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("REPID"), jo_decl.Value<string>("REPNAME"), "TO_DATE('" + jo_decl.Value<string>("RELATEDTIME") + "','yyyy-MM-dd HH24:mi:ss')"
+                                 , jo_decl.Value<string>("RELATEDUSERID"), jo_decl.Value<string>("RELATEDUSERNAME"), "TO_DATE('" + jo_decl.Value<string>("REPENDTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("REPENDID"), jo_decl.Value<string>("REPENDNAME"), "TO_DATE('" + jo_decl.Value<string>("REPOVERTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("REPOVERID"), jo_decl.Value<string>("REPOVERNAME"), jo_decl.Value<string>("CONSHIPPERNUM"), jo_decl.Value<string>("BUSIUNITNUM")
+                                 , jo_decl.Value<string>("REPUNITNUM"), jo_decl.Value<string>("ISNEEDCLEARANCE"), jo_decl.Value<string>("ISHAVECLEARANCE"), jo_decl.Value<string>("ISFORCELAW"), jo_decl.Value<string>("ISSPLIT"), jo_decl.Value<string>("WAREHOUSENO"), jo_decl.Value<string>("YARDCODE"), jo_decl.Value<string>("STATUS"), jo_decl.Value<string>("SHEETNUM"), jo_decl.Value<string>("PRESHEETNUM")
 
-                                            , jo_decl.Value<string>("commoditynum"), jo_decl.Value<string>("isaccept"), jo_decl.Value<string>("modifyflag"), jo_decl.Value<string>("checkflag"), jo_decl.Value<string>("preedit"), jo_decl.Value<string>("wpid"), jo_decl.Value<string>("wpname"), jo_decl.Value<string>("wptime"), jo_decl.Value<string>("cusno"), jo_decl.Value<string>("dataconfirm")
-                                            , jo_decl.Value<string>("relatedflag"), jo_decl.Value<string>("repoverflag"), jo_decl.Value<string>("preacctime"), jo_decl.Value<string>("preaccuserid"), jo_decl.Value<string>("preaccusername"), jo_decl.Value<string>("repwayid"), jo_decl.Value<string>("customsstatus"), jo_decl.Value<string>("prependtime"), jo_decl.Value<string>("prependuserid"), jo_decl.Value<string>("prependusername")
-                                            , jo_decl.Value<string>("totalnw"), jo_decl.Value<string>("totalmoney"), jo_decl.Value<string>("totalnum"), jo_decl.Value<string>("isprint"), jo_decl.Value<string>("printtime"), jo_decl.Value<string>("printnum"), jo_decl.Value<string>("preedituserid"), jo_decl.Value<string>("preeditusername"), jo_decl.Value<string>("preedittime"), jo_decl.Value<string>("listtype")
-                                            , jo_decl.Value<string>("formatauto"), jo_decl.Value<string>("busitype"), jo_decl.Value<string>("associatepedeclno"), jo_decl.Value<string>("associatedeclno"), jo_decl.Value<string>("declcodesource"), jo_decl.Value<string>("declremark"), jo_decl.Value<string>("pauseuserid"), jo_decl.Value<string>("pauseusername"), jo_decl.Value<string>("specialdecl"), jo_decl.Value<string>("dataconfirmuserid")
-                                            , jo_decl.Value<string>("dataconfirmusername"), jo_decl.Value<string>("dataconfirmusertime"), jo_decl.Value<string>("mocurrentid"), jo_decl.Value<string>("cocurrentid")
-                                            );
-
-                        DBMgr.ExecuteNonQuery(sql);
-                    }
-                    catch (Exception ex)
-                    {
-                        db.ListRightPush("Redis_Declare", json_decl);                    
-                    }
+                                 , jo_decl.Value<string>("COMMODITYNUM"), jo_decl.Value<string>("ISACCEPT"), jo_decl.Value<string>("MODIFYFLAG"), jo_decl.Value<string>("CHECKFLAG"), jo_decl.Value<string>("PREEDIT"), jo_decl.Value<string>("WPID"), jo_decl.Value<string>("WPNAME"), "TO_DATE('" + jo_decl.Value<string>("WPTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("CUSNO"), jo_decl.Value<string>("DATACONFIRM")
+                                 , jo_decl.Value<string>("RELATEDFLAG"), jo_decl.Value<string>("REPOVERFLAG"), "TO_DATE('" + jo_decl.Value<string>("PREACCTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("PREACCUSERID"), jo_decl.Value<string>("PREACCUSERNAME"), jo_decl.Value<string>("REPWAYID"), jo_decl.Value<string>("CUSTOMSSTATUS"), "TO_DATE('" + jo_decl.Value<string>("PREPENDTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("PREPENDUSERID"), jo_decl.Value<string>("PREPENDUSERNAME")
+                                 , jo_decl.Value<string>("TOTALNW"), jo_decl.Value<string>("TOTALMONEY"), jo_decl.Value<string>("TOTALNUM"), jo_decl.Value<string>("ISPRINT"), "TO_DATE('" + jo_decl.Value<string>("PRINTTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("PRINTNUM"), jo_decl.Value<string>("PREEDITUSERID"), jo_decl.Value<string>("PREEDITUSERNAME"), "TO_DATE('" + jo_decl.Value<string>("PREEDITTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("LISTTYPE")
+                                 , jo_decl.Value<string>("FORMATAUTO"), jo_decl.Value<string>("BUSITYPE"), jo_decl.Value<string>("ASSOCIATEPEDECLNO"), jo_decl.Value<string>("ASSOCIATEDECLNO"), jo_decl.Value<string>("DECLCODESOURCE"), jo_decl.Value<string>("DECLREMARK"), jo_decl.Value<string>("PAUSEUSERID"), jo_decl.Value<string>("PAUSEUSERNAME"), jo_decl.Value<string>("SPECIALDECL"), jo_decl.Value<string>("DATACONFIRMUSERID")
+                                 , jo_decl.Value<string>("DATACONFIRMUSERNAME"), "TO_DATE('" + jo_decl.Value<string>("DATACONFIRMUSERTIME") + "','yyyy-MM-dd HH24:mi:ss')", jo_decl.Value<string>("MOCURRENTID"), jo_decl.Value<string>("COCURRENTID")
+                                 );
+                    DBMgr.ExecuteNonQuery(sql);
                 }
-                working = false;
+                catch (Exception ex)
+                {
+                    db.ListRightPush("Redis_Declare", json_decl);
+                }
             }
         }
     }

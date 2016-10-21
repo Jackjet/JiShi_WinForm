@@ -80,12 +80,11 @@ namespace JiShi_WinForm
         {
             int retcount = -1;
             OracleConnection orclCon = null;
-            try
-            {
+            //try
+            //{
                 using (orclCon = new OracleConnection(ConnectionString))
                 {
                     OracleCommand oc = new OracleCommand(sql, orclCon);
-                    //oc.Parameters.AddRange(OraPara);, OracleParameter[] OraPara
                     if (orclCon.State.ToString().Equals("Open"))
                     {
                         orclCon.Close();
@@ -94,15 +93,15 @@ namespace JiShi_WinForm
                     retcount = oc.ExecuteNonQuery();
                     oc.Parameters.Clear();
                 }
-            }
-            catch (Exception e)
-            {
-                //log.Error(e.Message + e.StackTrace);
-            }
-            finally
-            {
-                orclCon.Close();
-            }
+            //}
+            //catch (Exception e)
+            //{
+            //    //log.Error(e.Message + e.StackTrace);
+            //}
+            //finally
+            //{
+            //    orclCon.Close();
+            //}
             return retcount;
         }
 
