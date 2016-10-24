@@ -39,27 +39,74 @@ namespace JiShi_WinForm
             {
                 working = true;
                 InsertDecl();
+                InsertDeclList();
                 working = false;
             }
         }
         private void InsertDeclList()
         {
-            string json_decllist = db.ListLeftPop("Redis_DeclareList");
+            string json_decllist = db.ListLeftPop("redis_declarelist");
             if (!string.IsNullOrEmpty(json_decllist))
             {
                 JObject jo_decllist = (JObject)JsonConvert.DeserializeObject(json_decllist);
-                string sql = "insert into list_decllist() values()";
+                //添加报关单明细
+                try
+                {
+                    string sql = @"insert into list_decllist(id
+                        , PREDECLID, ORDERNO, ITEMNO, COMMODITYNO, ADDITIONALNO, COMMODITYNAME
+                        , SPECIFICATIONSMODEL, LEGALQUANTITY, LEGALUNIT, SQUANTITY, SUNIT
+                        , CADQUANTITY, CADUNIT, UNITPRICE, TOTALPRICE, CURRENCY
+                        , CURRENCYCODE, TAXPAID, VERSIONNO, ARTNO, PROCESSINGFEES
+                        , GOODSNW, LICENSENO, ISOUEQUIPMENT, ISWASTEMATERIALS, ISFORCELAWCONDITION
+
+                        , PURPOSE, CUSTOMREGULATORY, INSPECTIONREGULATORY, CIQCODE, CREATEBY
+                        , CREATEDATE, ISINVALID, PREDECLCODE, COUNTRYORIGIN, COUNTRYORIGINCODE
+                        , UNITYCODE, NEWNO, ISSPECIAL, DESTCOUNTRYCODE, DESTCOUNTRYNAME
+                        , INOUTDATE
+                        ) values(list_decllist_id.nextval
+                        ,'{0}','{1}','{2}','{3}','{4}','{5}'
+                        ,'{6}','{7}','{8}','{9}','{10}'
+                        ,'{11}','{12}','{13}','{14}','{15}'
+                        ,'{16}','{17}','{18}','{19}','{20}'
+                        ,'{21}','{22}','{23}','{24}','{25}'
+
+                        ,'{26}','{27}','{28}','{29}','{30}'
+                        ,{31},'{32}','{33}','{34}','{35}'
+                        ,'{36}','{37}','{38}','{39}','{40}' 
+                        ,{41}  
+                        )";
+                    sql = string.Format(sql
+                        , jo_decllist.Value<string>("PREDECLID"), jo_decllist.Value<string>("ORDERNO"), jo_decllist.Value<string>("ITEMNO"), jo_decllist.Value<string>("COMMODITYNO"), jo_decllist.Value<string>("ADDITIONALNO"), jo_decllist.Value<string>("COMMODITYNAME")
+                                , jo_decllist.Value<string>("SPECIFICATIONSMODEL"), jo_decllist.Value<string>("LEGALQUANTITY"), jo_decllist.Value<string>("LEGALUNIT"), jo_decllist.Value<string>("SQUANTITY"), jo_decllist.Value<string>("SUNIT")
+                                , jo_decllist.Value<string>("CADQUANTITY"), jo_decllist.Value<string>("CADUNIT"), jo_decllist.Value<string>("UNITPRICE"), jo_decllist.Value<string>("TOTALPRICE"), jo_decllist.Value<string>("CURRENCY")
+                                , jo_decllist.Value<string>("CURRENCYCODE"), jo_decllist.Value<string>("TAXPAID"), jo_decllist.Value<string>("VERSIONNO"), jo_decllist.Value<string>("ARTNO"), jo_decllist.Value<string>("PROCESSINGFEES")
+                                , jo_decllist.Value<string>("GOODSNW"), jo_decllist.Value<string>("LICENSENO"), jo_decllist.Value<string>("ISOUEQUIPMENT"), jo_decllist.Value<string>("ISWASTEMATERIALS"), jo_decllist.Value<string>("ISFORCELAWCONDITION")
+
+                                , jo_decllist.Value<string>("PURPOSE"), jo_decllist.Value<string>("CUSTOMREGULATORY"), jo_decllist.Value<string>("INSPECTIONREGULATORY"), jo_decllist.Value<string>("CIQCODE"), jo_decllist.Value<string>("CREATEBY")
+                                , "to_date('" + jo_decllist.Value<string>("CREATEDATE") + "','yyyy-MM-dd HH24:mi:ss')", jo_decllist.Value<string>("ISINVALID"), jo_decllist.Value<string>("PREDECLCODE"), jo_decllist.Value<string>("COUNTRYORIGIN"), jo_decllist.Value<string>("COUNTRYORIGINCODE")
+                                , jo_decllist.Value<string>("UNITYCODE"), jo_decllist.Value<string>("NEWNO"), jo_decllist.Value<string>("ISSPECIAL"), jo_decllist.Value<string>("DESTCOUNTRYCODE"), jo_decllist.Value<string>("DESTCOUNTRYNAME")
+                                , "to_date('" + jo_decllist.Value<string>("INOUTDATE") + "','yyyy-MM-dd HH24:mi:ss')"
+                        );
+                    DBMgr.ExecuteNonQuery(sql);
+                }
+                catch (Exception ex)
+                {
+                    db.ListRightPush("redis_declarelist", json_decllist);
+                    this.button1.Text = ex.Message;
+                }
             }
         }
         private void InsertDecl()
         {
-            string json_decl = db.ListLeftPop("Redis_Declare"); 
+            string json_decl = db.ListLeftPop("Redis_Declare");
             if (!string.IsNullOrEmpty(json_decl))
             {
                 JObject jo_decl = (JObject)JsonConvert.DeserializeObject(json_decl);
                 try
                 {
                     string sql = "delete from list_declaration where code='" + jo_decl.Value<string>("CODE") + "'"; //先删除已经存在的预制报关单号
+                    DBMgr.ExecuteNonQuery(sql);
+                    sql = "delete from list_decllist where PREDECLCODE='" + jo_decl.Value<string>("CODE") + "'";//删除报关单明细
                     DBMgr.ExecuteNonQuery(sql);
                     //添加到报关单表
                     sql = @"insert into list_declaration(id
@@ -124,6 +171,7 @@ namespace JiShi_WinForm
                 catch (Exception ex)
                 {
                     db.ListRightPush("Redis_Declare", json_decl);
+                    this.button1.Text = ex.Message;
                 }
             }
         }
