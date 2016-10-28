@@ -8,6 +8,7 @@ using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -194,6 +195,7 @@ namespace JiShi_WinForm
                     JObject jo_status = (JObject)JsonConvert.DeserializeObject(json_status);
                     if (JudgeIsJiShiOrder(jo_status))
                     {
+                        string ORDERCODE = jo_status.Value<string>("ORDERCODE");
                         string sql = "delete from list_statuslog where ordercode='" + jo_status.Value<string>("ORDERCODE") + "' AND type='" + jo_status.Value<string>("TYPE") + "' and statuscode='" + jo_status.Value<string>("STATUSCODE") + "'";
                         DBMgr.ExecuteNonQuery(sql);
                         string syncresult = "failure"; //同步SAP结果
@@ -202,26 +204,32 @@ namespace JiShi_WinForm
                             case "15"://关务接单
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSGWJD(ORDERCODE);
                                 break;
                             case "20"://单证制单
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSDZZD(ORDERCODE);
                                 break;
                             case "40"://单证审单
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSDZSD(ORDERCODE);
                                 break;
                             case "80"://单证输机
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSDZSJ(ORDERCODE);
                                 break;
                             case "100"://报关单发送
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSDZFS(ORDERCODE);
                                 break;
                             case "110"://提前报关单发送
                                 //吉时在此处填充SAP接口代码
                                 syncresult = "success";
+                                ZSTQDZFS(ORDERCODE);
                                 break;
                         }
                         //添加状态变更到list_statuslog表
@@ -255,6 +263,313 @@ namespace JiShi_WinForm
                 rtn = true;
             }
             return rtn;
+        }
+
+
+        //关务接单
+        public static void ZSGWJD(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                FOONO = dt.Rows[0]["FOONO"] + "";
+                if (!string.IsNullOrEmpty(FOONO))
+                {
+                    FOONO = FOONO.Remove(0, 4);
+                    string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+                    m.EVENT_CODE = "ZSGWJD";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSGWJD(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSGWJD(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //单证制单
+        public static void ZSDZZD(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                //FOONO 报关Foo
+                if (!string.IsNullOrEmpty(dt.Rows[0]["FOONO"] + ""))
+                {
+                    FOONO = dt.Rows[0]["FOONO"] + "";
+                    FOONO = FOONO.Remove(0, 4);
+                    m.EVENT_CODE = "ZSDZZD";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZZD报关(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZZD报关(接口回调报错)", CODE, "4");
+                    }
+                }
+                //FOONO 报检Foo
+                if (!string.IsNullOrEmpty(dt.Rows[0]["FOONOBJ"] + ""))
+                {
+                    FOONO = dt.Rows[0]["FOONOBJ"] + "";
+                    FOONO = FOONO.Remove(0, 4);
+                    m.EVENT_CODE = "ZSDZZD";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZZD报检(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZZD报检(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //单证审单
+        public static void ZSDZSD(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                FOONO = dt.Rows[0]["FOONO"] + "";
+                if (!string.IsNullOrEmpty(FOONO))
+                {
+                    FOONO = FOONO.Remove(0, 4);
+                    string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+                    m.EVENT_CODE = "ZSDZSD";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZSD(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZSD(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //单证输机
+        public static void ZSDZSJ(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                //FOONO 报关Foo
+                if (!string.IsNullOrEmpty(dt.Rows[0]["FOONO"] + ""))
+                {
+                    FOONO = dt.Rows[0]["FOONO"] + "";
+                    FOONO = FOONO.Remove(0, 4);
+                    m.EVENT_CODE = "ZSDZSJ";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZSJ报关(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZSJ报关(接口回调报错)", CODE, "4");
+                    }
+                }
+                //FOONO 报检Foo
+                if (!string.IsNullOrEmpty(dt.Rows[0]["FOONOBJ"] + ""))
+                {
+                    FOONO = dt.Rows[0]["FOONOBJ"] + "";
+                    FOONO = FOONO.Remove(0, 4);
+                    m.EVENT_CODE = "ZSDZSJ";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZSJ报检(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZSJ报检(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //报关单发送
+        public static void ZSDZFS(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                FOONO = dt.Rows[0]["FOONO"] + "";
+                if (!string.IsNullOrEmpty(FOONO))
+                {
+                    FOONO = FOONO.Remove(0, 4);
+                    string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+                    m.EVENT_CODE = "ZSDZFS";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSDZFS(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSDZFS(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //提前报关单发送
+        public static void ZSTQDZFS(string CODE)
+        {
+            sap.SI_CUS_CUS1002Service api = new sap.SI_CUS_CUS1002Service();
+            api.Timeout = 6000000;
+            api.Credentials = new NetworkCredential("soapcall", "soapcall");
+            sap.DT_CUS_CUS1002_REQITEM m = new sap.DT_CUS_CUS1002_REQITEM();//模型
+            string sql = "select *　from list_order where code ='" + CODE + "'";
+            DataTable dt = DBMgr.GetDataTable(sql);
+            string FWONO = "";
+            string FOONO = "";
+            string EVENT_DAT = "";
+            if (dt.Rows.Count > 0)
+            {
+                FWONO = dt.Rows[0]["FWONO"] + "";
+                FOONO = dt.Rows[0]["FOONO"] + "";
+                if (!string.IsNullOrEmpty(FOONO))
+                {
+                    FOONO = FOONO.Remove(0, 4);
+                    string datetime = DateTime.Now.ToLocalTime().ToString("yyyyMMddHHmmss");
+                    m.EVENT_CODE = "ZSTQDZFS";
+                    m.FWO_ID = FWONO;
+                    m.FOO_ID = FOONO;
+                    m.EVENT_DAT = EVENT_DAT;
+                    sap.DT_CUS_CUS1002_REQITEM[] mlist = new sap.DT_CUS_CUS1002_REQITEM[1];
+                    mlist[0] = m;
+                    sap.DT_CUS_CUS1002_RES res;
+                    try
+                    {
+                        res = api.SI_CUS_CUS1002(mlist);
+                        save_log(res.EV_ERROR + "", "ZSTQDZFS(" + res.EV_MSG + ")", CODE, "4");
+                    }
+                    catch (Exception e)
+                    {
+                        save_log("E", "ZSTQDZFS(接口回调报错)", CODE, "4");
+                    }
+                }
+            }
+        }
+        //存日志  1 sap->现场  2 现场->单证云
+        public static void save_log(string MSG_TYPE, string MSG_TXT, string CODE, string source)
+        {
+            if (source == "3")
+            {
+                source = "新关务->SAP";
+            }
+            string STATUS;
+            if (MSG_TYPE == "E")
+            {
+                STATUS = "失败";
+            }
+            else
+            {
+                STATUS = "成功";
+            }
+            string TEXT = "";
+
+            if (!string.IsNullOrEmpty(MSG_TXT))
+            {
+                TEXT += "[" + MSG_TXT + "]";
+            }
+            string sql = @"INSERT INTO MSG (ID,FWONO,SOURCE,TEXT,STATUS,CREATETIME) VALUES (MSG_ID.Nextval,'" + CODE + "','" + source + "','" + TEXT + "','" + STATUS + "',sysdate)";
+            DBMgr.ExecuteNonQuery(sql);
         }
     }
 }
